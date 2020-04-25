@@ -169,6 +169,26 @@ impl ServoUrl {
     pub fn from_file_path<P: AsRef<Path>>(path: P) -> Result<Self, ()> {
         Ok(Self::from_url(Url::from_file_path(path)?))
     }
+
+    // https://w3c.github.io/webappsec-secure-contexts/#is-origin-trustworthy
+    pub fn is_origin_trustworthy(&self) -> bool {
+        // Step 1
+        if !self.origin().is_tuple() {
+            return false;
+        }
+
+        // Step 3
+        if self.scheme() == "https" || self.scheme() == "wss" {
+            true
+        // Step 4
+        } else if self.host().is_some() {
+            let host = self.host_str().unwrap();
+            host == "127.0.0.0/8" || host == "::1/128"
+        // Step 6
+        } else {
+            self.scheme() == "file"
+        }
+    }
 }
 
 impl fmt::Display for ServoUrl {
