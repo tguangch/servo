@@ -380,6 +380,7 @@ pub struct Document {
     csp_list: DomRefCell<Option<CspList>>,
     /// https://w3c.github.io/slection-api/#dfn-selection
     selection: MutNullableDom<Selection>,
+    dirty_root: MutNullableDom<Node>,
 }
 
 #[derive(JSTraceable, MallocSizeOf)]
@@ -439,6 +440,40 @@ enum ElementLookupResult {
 
 #[allow(non_snake_case)]
 impl Document {
+    pub fn note_dirty_node(&self, node: &Node) {
+        debug_assert!(*node.owner_doc() == *self);
+
+        if !node.is_connected() {
+            return;
+        }
+
+        let dirty_root = match self.dirty_root.get() {
+            None => {
+                node.set_flag(NodeFlags::HAS_DIRTY_DESCENDANTS, true);
+                self.dirty_root.set(Some(node));
+                return;
+            },
+            Some(root) => root,
+        };
+
+        for ancestor in node.inclusive_ancestors(ShadowIncluding::Yes) {
+            if ancestor.get_flag(NodeFlags::HAS_DIRTY_DESCENDANTS) {
+                return;
+            }
+            ancestor.set_flag(NodeFlags::HAS_DIRTY_DESCENDANTS, true);
+        }
+
+        let mut found_new_dirty_root = false;
+        for ancestor in dirty_root.inclusive_ancestors(ShadowIncluding::Yes).skip(1) {
+            if !found_new_dirty_root && ancestor.get_flag(NodeFlags::HAS_DIRTY_DESCENDANTS) {
+                self.dirty_root.set(Some(&ancestor));
+                found_new_dirty_root = true;
+                continue;
+            }
+            ancestor.set_flag(NodeFlags::HAS_DIRTY_DESCENDANTS, !found_new_dirty_root);
+        }
+    }
+
     #[inline]
     pub fn loader(&self) -> Ref<DocumentLoader> {
         self.loader.borrow()
@@ -2896,6 +2931,7 @@ impl Document {
             dirty_webgl_contexts: DomRefCell::new(HashMap::new()),
             csp_list: DomRefCell::new(None),
             selection: MutNullableDom::new(None),
+            dirty_root: Default::default(),
         }
     }
 

@@ -613,17 +613,7 @@ impl Node {
 
     // FIXME(emilio): This and the function below should move to Element.
     pub fn note_dirty_descendants(&self) {
-        debug_assert!(self.is_connected());
-
-        for ancestor in self.inclusive_ancestors(ShadowIncluding::Yes) {
-            if ancestor.get_flag(NodeFlags::HAS_DIRTY_DESCENDANTS) {
-                return;
-            }
-
-            if ancestor.is::<Element>() {
-                ancestor.set_flag(NodeFlags::HAS_DIRTY_DESCENDANTS, true);
-            }
-        }
+        self.owner_doc().note_dirty_node(self);
     }
 
     pub fn has_dirty_descendants(&self) -> bool {
@@ -2156,6 +2146,7 @@ impl Node {
         // Step 8.
         let old_next_sibling = node.GetNextSibling();
         // Steps 9-10 are handled in unbind_from_tree.
+        parent.owner_doc().note_dirty_node(parent);
         parent.remove_child(node, cached_index);
         // Step 11. transient registered observers
         // Step 12.

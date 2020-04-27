@@ -515,6 +515,9 @@ impl Element {
 
     pub fn detach_shadow(&self) {
         if let Some(ref shadow_root) = self.shadow_root() {
+            self.upcast::<Node>()
+                .owner_doc()
+                .note_dirty_node(self.upcast());
             shadow_root.detach();
             self.ensure_rare_data().shadow_root = None;
         } else {
