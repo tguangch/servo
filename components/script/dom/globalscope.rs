@@ -37,6 +37,7 @@ use crate::dom::paintworkletglobalscope::PaintWorkletGlobalScope;
 use crate::dom::performance::Performance;
 use crate::dom::performanceobserver::VALID_ENTRY_TYPES;
 use crate::dom::promise::Promise;
+use crate::dom::serviceworkerregistration::ServiceWorkerRegistration;
 use crate::dom::window::Window;
 use crate::dom::workerglobalscope::WorkerGlobalScope;
 use crate::dom::workletglobalscope::WorkletGlobalScope;
@@ -128,6 +129,9 @@ pub struct GlobalScope {
 
     /// The blobs managed by this global, if any.
     blob_state: DomRefCell<BlobState>,
+
+    /// A map to store service worker registrations used by this global.
+    registration_map: DomRefCell<HashMap<ServoUrl, Dom<ServiceWorkerRegistration>>>,
 
     /// Pipeline id associated with this global.
     pipeline_id: PipelineId,
@@ -557,6 +561,7 @@ impl GlobalScope {
             blob_state: DomRefCell::new(BlobState::UnManaged),
             eventtarget: EventTarget::new_inherited(),
             crypto: Default::default(),
+            registration_map: DomRefCell::new(HashMap::new()),
             pipeline_id,
             devtools_wants_updates: Default::default(),
             console_timers: DomRefCell::new(Default::default()),
@@ -632,6 +637,23 @@ impl GlobalScope {
                 timer_listener.handle(event);
             }),
         );
+    }
+
+    /// <https://w3c.github.io/ServiceWorker/#get-the-service-worker-registration-object>
+    pub fn get_serviceworker_registration(
+        &self,
+        script_url: &ServoUrl,
+        scope: &ServoUrl,
+    ) -> DomRoot<ServiceWorkerRegistration> {
+        let mut registrations = self.registration_map.borrow_mut();
+
+        if let Some(registration) = registrations.get(scope) {
+            DomRoot::from_ref(&**registration)
+        } else {
+            let new_registration = ServiceWorkerRegistration::new(self, script_url, scope.clone());
+            registrations.insert(scope.clone(), Dom::from_ref(&*new_registration));
+            DomRoot::from_ref(&*new_registration)
+        }
     }
 
     /// Complete the transfer of a message-port.

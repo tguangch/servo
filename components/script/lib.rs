@@ -90,8 +90,6 @@ pub mod script_thread;
 #[warn(deprecated)]
 pub mod serviceworker_manager;
 #[warn(deprecated)]
-mod serviceworkerjob;
-#[warn(deprecated)]
 mod stylesheet_loader;
 #[warn(deprecated)]
 mod stylesheet_set;

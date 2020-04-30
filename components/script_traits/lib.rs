@@ -71,8 +71,8 @@ use webrender_api::{BuiltDisplayList, DocumentId, ExternalScrollId, ImageKey, Sc
 use webrender_api::{BuiltDisplayListDescriptor, HitTestFlags, HitTestResult, ResourceUpdate};
 
 pub use crate::script_msg::{
-    DOMMessage, HistoryEntryReplacement, SWManagerMsg, SWManagerSenders, ScopeThings,
-    ServiceWorkerMsg,
+    DOMMessage, HistoryEntryReplacement, Job, JobError, JobResult, JobType, SWManagerMsg,
+    SWManagerSenders, ScopeThings, ServiceWorkerMsg,
 };
 pub use crate::script_msg::{
     EventResult, IFrameSize, IFrameSizeMsg, LayoutMsg, LogEntry, ScriptMsg,
